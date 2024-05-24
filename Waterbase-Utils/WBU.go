@@ -11,13 +11,19 @@ import (
 
 //"http://localhost:8080"
 
+var services map[string]*Service
+
 const serverIP = "http://localhost:8080" //"http://192.168.50.121:9420"
 const REGISTER_URL = "/waterbase/register"
 const RETRIEVE_URL = "/waterbase/retrieve"
 const DELETE_URL = "/waterbase/remove"
 
+func Init() {
+	services = make(map[string]*Service)
+}
+
 // Creates a new service and returns the auth key
-func CreateService(name string, owner string, adminkey string) (Service, bool) {
+func CreateService(name string, owner string, adminkey string) *Service {
 
 	req := make(map[string]interface{})
 	service := Service{}
@@ -32,31 +38,32 @@ func CreateService(name string, owner string, adminkey string) (Service, bool) {
 	res, err := http.Post(serverIP+REGISTER_URL+"?type=service", "application-json", b)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Service{}, false
+		return nil
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Service{}, false
+		return nil
 	}
 
 	var data map[string]interface{}
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		return Service{}, false
+		return nil
 	}
 
 	service.Name = name
 	service.Owner = owner
 	service.Authkey = data["auth"].(string)
+	services[service.Name] = &service
 
-	return service, false
+	return services[service.Name]
 }
 
-func GetService(name string, auth string) (Service, bool) {
+func GetService(name string, auth string) *Service {
 
 	url := serverIP + RETRIEVE_URL + "?service=" + name
 
@@ -69,55 +76,53 @@ func GetService(name string, auth string) (Service, bool) {
 	err := json.NewEncoder(b).Encode(jsonData)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Service{}, false
+		return nil
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, b)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Service{}, false
+		return nil
 	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Service{}, false
+		return nil
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Service{}, false
+		return nil
 	}
 
 	service := Service{}
 
-	//data := make(map[string]interface{})
-
 	err = json.Unmarshal(body, &service)
 	if err != nil {
 		fmt.Println(err.Error())
-		return Service{}, false
+		return nil
 	}
 
 	service.Name = name
 	service.Authkey = auth
+	services[service.Name] = &service
 
-	return service, true
+	return services[service.Name]
 }
 
 func DeleteService(name string, auth string) bool {
 
-	//http://localhost:8080/waterbase/remove?name=Sandbox&type=service
+	//http://localhost:8080/waterbase/remove?type=service
 
-	url := serverIP + DELETE_URL + "?type=service&name=" + name
-
-	fmt.Println(url)
+	url := serverIP + DELETE_URL + "?type=service"
 
 	jsonData := make(map[string]interface{})
 
 	jsonData["auth"] = auth
+	jsonData["servicename"] = name
 
 	b := new(bytes.Buffer)
 	err := json.NewEncoder(b).Encode(jsonData)
@@ -137,11 +142,14 @@ func DeleteService(name string, auth string) bool {
 		fmt.Println(err.Error())
 		return false
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusAccepted {
 		fmt.Println("Failed to delete service")
 		return false
 	}
+
+	delete(services, name)
 
 	return true
 }
@@ -242,6 +250,39 @@ func (s *Service) GetCollection(name string) *Collection {
 	return collection
 }
 
+func (s *Service) DeleteCollection(name string) bool {
+
+	data := make(map[string]interface{})
+
+	data["auth"] = s.Authkey
+	data["servicename"] = s.Name
+	data["collectionname"] = name
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(data)
+
+	req, err := http.NewRequest(http.MethodDelete, serverIP+DELETE_URL+"?type=collection", b)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusAccepted {
+		fmt.Println("Failed to delete collection")
+		return false
+	}
+
+	delete(s.Collections, name)
+	return true
+}
+
 func (c *Collection) CreateDocument(name string, content map[string]interface{}) error {
 
 	req := make(map[string]interface{})
@@ -252,11 +293,6 @@ func (c *Collection) CreateDocument(name string, content map[string]interface{})
 	req["collectionname"] = c.Name
 	req["servicename"] = c.Servicename
 	req["content"] = content
-
-	//collection := Collection{}
-
-	fmt.Println("Creating document with data:")
-	fmt.Println(req)
 
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(req)
@@ -273,5 +309,25 @@ func (c *Collection) CreateDocument(name string, content map[string]interface{})
 func StressTest(rounds int) {
 	for i := 0; i < rounds; i++ {
 		CreateService(fmt.Sprintf("%v", rand.Intn(1000000)), "John", "Keks")
+	}
+}
+
+func HyperStressTest(rounds int) {
+
+	content := make(map[string]interface{})
+
+	content["tempData"] = "HyperTesting for the win"
+
+	for i := 0; i < rounds; i++ {
+		fmt.Println("Round: " + fmt.Sprintf("%v", i))
+		service := CreateService(fmt.Sprintf("%v", rand.Intn(1000000)), "John", "Keks")
+		if service == nil {
+			fmt.Println("Failed to create service")
+			continue
+		}
+
+		collection := service.CreateCollection(fmt.Sprintf("%v", rand.Intn(1000000)))
+
+		collection.CreateDocument(fmt.Sprintf("%v", rand.Intn(1000000)), content)
 	}
 }
