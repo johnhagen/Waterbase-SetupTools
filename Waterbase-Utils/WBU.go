@@ -7,16 +7,19 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"sync"
 )
 
 //"http://localhost:8080"
 
+var M sync.Mutex
 var services map[string]*Service
 
 const serverIP = "http://localhost:8080" //"http://192.168.50.121:9420"
 const REGISTER_URL = "/waterbase/register"
 const RETRIEVE_URL = "/waterbase/retrieve"
-const DELETE_URL = "/waterbase/remove"
+const REMOVE_URL = "/waterbase/remove"
+const TRANSMITT_URL = "/waterbase/transmitt"
 
 func Init() {
 	services = make(map[string]*Service)
@@ -58,7 +61,10 @@ func CreateService(name string, owner string, adminkey string) *Service {
 	service.Name = name
 	service.Owner = owner
 	service.Authkey = data["auth"].(string)
+	service.Collections = make(map[string]*Collection)
+	M.Lock()
 	services[service.Name] = &service
+	M.Unlock()
 
 	return services[service.Name]
 }
@@ -117,7 +123,7 @@ func DeleteService(name string, auth string) bool {
 
 	//http://localhost:8080/waterbase/remove?type=service
 
-	url := serverIP + DELETE_URL + "?type=service"
+	url := serverIP + REMOVE_URL + "?type=service"
 
 	jsonData := make(map[string]interface{})
 
@@ -149,8 +155,9 @@ func DeleteService(name string, auth string) bool {
 		return false
 	}
 
+	M.Lock()
 	delete(services, name)
-
+	M.Unlock()
 	return true
 }
 
@@ -169,19 +176,12 @@ func (s *Service) CreateCollection(name string) *Collection {
 	collection.Owner = s.Owner
 	collection.Servicename = s.Name
 	collection.Authkey = s.Authkey
+	collection.Documents = make(map[string]*Document)
 
 	req["name"] = name
 	req["owner"] = s.Owner
 	req["auth"] = s.Authkey
 	req["servicename"] = s.Name
-
-	/*
-		fmt.Println("Collection creation with JSON:")
-		fmt.Println(name)
-		fmt.Println(s.Owner)
-		fmt.Println(s.Authkey)
-		fmt.Println(s.Name)
-	*/
 
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(collection)
@@ -192,7 +192,50 @@ func (s *Service) CreateCollection(name string) *Collection {
 		return nil
 	}
 	defer res.Body.Close()
-	return collection
+
+	s.Collections[name] = collection
+	return s.Collections[name]
+}
+
+func (s *Service) GetAllCollections() []string {
+
+	url := serverIP + TRANSMITT_URL + "?type=collections"
+
+	reqData := make(map[string]interface{})
+	reqData["auth"] = s.Authkey
+	reqData["servicename"] = s.Name
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(reqData)
+
+	req, err := http.NewRequest(http.MethodGet, url, b)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+	defer res.Body.Close()
+
+	var colNames []string
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	err = json.Unmarshal(data, &colNames)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	return colNames
 }
 
 func (s *Service) GetCollection(name string) *Collection {
@@ -247,7 +290,7 @@ func (s *Service) GetCollection(name string) *Collection {
 
 	s.Collections[name] = collection
 
-	return collection
+	return s.Collections[name]
 }
 
 func (s *Service) DeleteCollection(name string) bool {
@@ -261,7 +304,7 @@ func (s *Service) DeleteCollection(name string) bool {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(data)
 
-	req, err := http.NewRequest(http.MethodDelete, serverIP+DELETE_URL+"?type=collection", b)
+	req, err := http.NewRequest(http.MethodDelete, serverIP+REMOVE_URL+"?type=collection", b)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -283,7 +326,7 @@ func (s *Service) DeleteCollection(name string) bool {
 	return true
 }
 
-func (c *Collection) CreateDocument(name string, content map[string]interface{}) error {
+func (c *Collection) CreateDocument(name string, content map[string]interface{}) *Document {
 
 	req := make(map[string]interface{})
 
@@ -300,10 +343,154 @@ func (c *Collection) CreateDocument(name string, content map[string]interface{})
 	res, err := http.Post(serverIP+REGISTER_URL+"?type=document", "application/json", b)
 	if err != nil {
 		fmt.Println(err.Error())
-		return err
+		return nil
 	}
 	defer res.Body.Close()
-	return nil
+
+	if res.StatusCode != http.StatusAccepted {
+		fmt.Println("Failed to create document")
+		return nil
+	}
+
+	doc := new(Document)
+	doc.Content = content
+	doc.CreationDate = "temp"
+	doc.LastUpdated = "temp"
+	doc.Name = name
+	doc.Owner = c.Owner
+	doc.UpdatedBy = "temp"
+
+	c.Documents[name] = doc
+	return c.Documents[name]
+}
+
+func (c *Collection) GetAllDocuments() []string {
+
+	url := serverIP + TRANSMITT_URL + "?type=documents"
+
+	reqData := make(map[string]interface{})
+	reqData["auth"] = c.Authkey
+	reqData["servicename"] = c.Servicename
+	reqData["collectionname"] = c.Name
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(reqData)
+
+	req, err := http.NewRequest(http.MethodGet, url, b)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+	defer res.Body.Close()
+
+	var docNames []string
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	err = json.Unmarshal(data, &docNames)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	return docNames
+}
+
+func (c *Collection) GetDocument(name string) *Document {
+
+	url := serverIP + REMOVE_URL + "?service=" + c.Servicename + "&collection=" + c.Name + "&document=" + name
+
+	reqData := make(map[string]interface{})
+	reqData["auth"] = c.Authkey
+	reqData["servicename"] = c.Servicename
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(reqData)
+
+	req, err := http.NewRequest(http.MethodGet, url, b)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		fmt.Println("Failed to get document")
+		return nil
+	}
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	document := new(Document)
+
+	err = json.Unmarshal(data, &document)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	c.Documents[name] = document
+	return c.Documents[name]
+}
+
+func (c *Collection) DeleteDocument(name string) bool {
+
+	url := serverIP + REMOVE_URL + "?type=document"
+
+	reqData := make(map[string]interface{})
+	reqData["servicename"] = c.Servicename
+	reqData["collectionname"] = c.Name
+	reqData["documentname"] = name
+	reqData["auth"] = c.Authkey
+
+	b := new(bytes.Buffer)
+	err := json.NewEncoder(b).Encode(reqData)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, url, b)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	res.Body.Close()
+
+	if res.StatusCode != http.StatusAccepted {
+		fmt.Println("Failed to delete document")
+		return false
+	}
+
+	delete(c.Documents, name)
+
+	return true
 }
 
 func StressTest(rounds int) {

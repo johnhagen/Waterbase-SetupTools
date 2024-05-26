@@ -17,10 +17,10 @@ type Collection struct {
 }
 
 type Document struct {
-	UpdatedBy    string
-	Name         string `json:"name"`
-	Owner        string `json:"owner"`
-	CreationDate string
-	LastUpdated  string
+	UpdatedBy    string      `json:"updatedBy"`
+	Name         string      `json:"name"`
+	Owner        string      `json:"owner"`
+	CreationDate string      `json:"creationDate"`
+	LastUpdated  string      `json:"lastUpdated"`
 	Content      interface{} `json:"content"`
 }

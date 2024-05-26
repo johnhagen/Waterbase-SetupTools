@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	WBU "sandbox/Waterbase-Utils"
 )
 
@@ -8,9 +9,22 @@ func main() {
 
 	WBU.Init()
 
-	WBU.GetService("107594", "67D8A9F78068320D780D973C85B04FA")
+	//content := make(map[string]interface{})
 
-	WBU.DeleteService("107594", "67D8A9F78068320D780D973C85B04FA")
+	service := WBU.GetService("testservice", "A75635B24B50CA0F358F6469F0E0AF3")
+	if service == nil {
+		service = WBU.CreateService("testservice", "john", "Keks")
+	}
+
+	//collection := service.CreateCollection("Kekekeke")
+
+	fmt.Println(service.GetAllCollections())
+
+	//WBU.HyperStressTest(2000)
+
+	//collection.DeleteDocument("Testing")
+
+	//WBU.DeleteService("107594", "67D8A9F78068320D780D973C85B04FA")
 
 	//service.DeleteCollection("TestCollection")
 
