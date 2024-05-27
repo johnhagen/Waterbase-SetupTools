@@ -27,6 +27,7 @@ func Init() {
 
 // Creates a new service and returns the auth key
 func CreateService(name string, owner string, adminkey string) *Service {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	req := make(map[string]interface{})
 	service := Service{}
@@ -38,7 +39,13 @@ func CreateService(name string, owner string, adminkey string) *Service {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(req)
 
-	res, err := http.Post(serverIP+REGISTER_URL+"?type=service", "application-json", b)
+	reqData, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=service", b)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	res, err := WebClient().Do(reqData)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -70,6 +77,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 }
 
 func GetService(name string, auth string) *Service {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + RETRIEVE_URL + "?service=" + name
 
@@ -91,7 +99,7 @@ func GetService(name string, auth string) *Service {
 		return nil
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -120,6 +128,7 @@ func GetService(name string, auth string) *Service {
 }
 
 func DeleteService(name string, auth string) bool {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	//http://localhost:8080/waterbase/remove?type=service
 
@@ -143,7 +152,7 @@ func DeleteService(name string, auth string) bool {
 		return false
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -162,6 +171,7 @@ func DeleteService(name string, auth string) bool {
 }
 
 func (s *Service) CreateCollection(name string) *Collection {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	if s.Name == "" {
 		fmt.Println("Service doesnt exist")
@@ -186,18 +196,27 @@ func (s *Service) CreateCollection(name string) *Collection {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(collection)
 
-	res, err := http.DefaultClient.Post(serverIP+REGISTER_URL+"?type=collection", "application/json", b)
+	res, err := WebClient().Post(serverIP+REGISTER_URL+"?type=collection", "application/json", b)
 	if err != nil {
 		fmt.Println("Create collection: " + err.Error())
 		return nil
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode == http.StatusAlreadyReported {
+		fmt.Println("Collection already exists")
+		return nil
+	} else if res.StatusCode != http.StatusAccepted {
+		fmt.Println("Failed to create collection")
+		return nil
+	}
+
 	s.Collections[name] = collection
 	return s.Collections[name]
 }
 
 func (s *Service) GetAllCollections() []string {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + TRANSMITT_URL + "?type=collections"
 
@@ -214,7 +233,7 @@ func (s *Service) GetAllCollections() []string {
 		return nil
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -239,6 +258,7 @@ func (s *Service) GetAllCollections() []string {
 }
 
 func (s *Service) GetCollection(name string) *Collection {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + RETRIEVE_URL + "?service=" + s.Name + "&collection=" + name
 
@@ -261,7 +281,7 @@ func (s *Service) GetCollection(name string) *Collection {
 		return nil
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println("Fuck me")
 		fmt.Println(err.Error())
@@ -288,12 +308,14 @@ func (s *Service) GetCollection(name string) *Collection {
 		return nil
 	}
 
+	collection.Authkey = s.Authkey
 	s.Collections[name] = collection
 
 	return s.Collections[name]
 }
 
 func (s *Service) DeleteCollection(name string) bool {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	data := make(map[string]interface{})
 
@@ -310,7 +332,7 @@ func (s *Service) DeleteCollection(name string) bool {
 		return false
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -327,6 +349,7 @@ func (s *Service) DeleteCollection(name string) bool {
 }
 
 func (c *Collection) CreateDocument(name string, content map[string]interface{}) *Document {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	req := make(map[string]interface{})
 
@@ -340,7 +363,13 @@ func (c *Collection) CreateDocument(name string, content map[string]interface{})
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(req)
 
-	res, err := http.Post(serverIP+REGISTER_URL+"?type=document", "application/json", b)
+	reqData, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=document", b)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	res, err := WebClient().Do(reqData)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -365,6 +394,7 @@ func (c *Collection) CreateDocument(name string, content map[string]interface{})
 }
 
 func (c *Collection) GetAllDocuments() []string {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + TRANSMITT_URL + "?type=documents"
 
@@ -382,7 +412,7 @@ func (c *Collection) GetAllDocuments() []string {
 		return nil
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -407,6 +437,7 @@ func (c *Collection) GetAllDocuments() []string {
 }
 
 func (c *Collection) GetDocument(name string) *Document {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + REMOVE_URL + "?service=" + c.Servicename + "&collection=" + c.Name + "&document=" + name
 
@@ -423,7 +454,7 @@ func (c *Collection) GetDocument(name string) *Document {
 		return nil
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -454,6 +485,7 @@ func (c *Collection) GetDocument(name string) *Document {
 }
 
 func (c *Collection) DeleteDocument(name string) bool {
+	defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + REMOVE_URL + "?type=document"
 
@@ -476,12 +508,12 @@ func (c *Collection) DeleteDocument(name string) bool {
 		return false
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
 	}
-	res.Body.Close()
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusAccepted {
 		fmt.Println("Failed to delete document")
