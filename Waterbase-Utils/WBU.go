@@ -15,14 +15,21 @@ import (
 var M sync.Mutex
 var services map[string]*Service
 
-const serverIP = "http://localhost:8080" //"http://192.168.50.121:9420"
+var serverIP string
+
+// const serverIP = "http://localhost:8080" //"http://192.168.50.121:9420"
 const REGISTER_URL = "/waterbase/register"
 const RETRIEVE_URL = "/waterbase/retrieve"
 const REMOVE_URL = "/waterbase/remove"
 const TRANSMITT_URL = "/waterbase/transmitt"
 
-func Init() {
+func Init(ServerIP string) {
+	serverIP = ServerIP
 	services = make(map[string]*Service)
+}
+
+func DBCheck() *map[string]*Service {
+	return &services
 }
 
 // Creates a new service and returns the auth key
@@ -79,7 +86,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 func GetService(name string, auth string) *Service {
 	defer http.DefaultClient.CloseIdleConnections()
 
-	url := serverIP + RETRIEVE_URL + "?service=" + name
+	url := serverIP + RETRIEVE_URL + "?type=service"
 
 	jsonData := make(map[string]interface{})
 
@@ -260,11 +267,13 @@ func (s *Service) GetAllCollections() []string {
 func (s *Service) GetCollection(name string) *Collection {
 	defer http.DefaultClient.CloseIdleConnections()
 
-	url := serverIP + RETRIEVE_URL + "?service=" + s.Name + "&collection=" + name
+	url := serverIP + RETRIEVE_URL + "?type=collection"
 
 	body := make(map[string]interface{})
 
 	body["auth"] = s.Authkey
+	body["servicename"] = s.Name
+	body["collectionname"] = name
 
 	b := new(bytes.Buffer)
 	err := json.NewEncoder(b).Encode(body)
@@ -389,6 +398,7 @@ func (c *Collection) CreateDocument(name string, content map[string]interface{})
 	doc.Owner = c.Owner
 	doc.UpdatedBy = "temp"
 
+	fmt.Println("Created document: " + doc.Name)
 	c.Documents[name] = doc
 	return c.Documents[name]
 }
@@ -439,11 +449,13 @@ func (c *Collection) GetAllDocuments() []string {
 func (c *Collection) GetDocument(name string) *Document {
 	defer http.DefaultClient.CloseIdleConnections()
 
-	url := serverIP + REMOVE_URL + "?service=" + c.Servicename + "&collection=" + c.Name + "&document=" + name
+	url := serverIP + RETRIEVE_URL + "?type=document"
 
 	reqData := make(map[string]interface{})
 	reqData["auth"] = c.Authkey
 	reqData["servicename"] = c.Servicename
+	reqData["collectionname"] = c.Name
+	reqData["documentname"] = name
 
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(reqData)
@@ -520,6 +532,7 @@ func (c *Collection) DeleteDocument(name string) bool {
 		return false
 	}
 
+	fmt.Println("Deleted document: " + name)
 	delete(c.Documents, name)
 
 	return true
