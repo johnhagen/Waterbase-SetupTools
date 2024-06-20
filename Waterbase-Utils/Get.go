@@ -9,7 +9,7 @@ import (
 )
 
 func GetService(name string, auth string) *Service {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + RETRIEVE_URL + "?type=service"
 
@@ -30,6 +30,7 @@ func GetService(name string, auth string) *Service {
 
 	req.Header.Add("Servicename", name)
 	req.Header.Add("Auth", auth)
+	req.Header.Add("Authorization", "Basic "+creds)
 
 	res, err := WebClient().Do(req)
 	if err != nil {
@@ -60,7 +61,7 @@ func GetService(name string, auth string) *Service {
 }
 
 func (s *Service) GetAllCollections() []string {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + TRANSMITT_URL + "?type=collections"
 
@@ -77,6 +78,7 @@ func (s *Service) GetAllCollections() []string {
 
 	req.Header.Add("Servicename", s.Name)
 	req.Header.Add("Auth", s.Authkey)
+	req.Header.Add("Authorization", "Basic "+creds)
 
 	res, err := WebClient().Do(req)
 	if err != nil {
@@ -103,7 +105,7 @@ func (s *Service) GetAllCollections() []string {
 }
 
 func (s *Service) GetCollection(name string) *Collection {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + RETRIEVE_URL + "?type=collection"
 
@@ -127,6 +129,7 @@ func (s *Service) GetCollection(name string) *Collection {
 	req.Header.Add("Auth", s.Authkey)
 	req.Header.Add("Servicename", s.Name)
 	req.Header.Add("Collectionname", name)
+	req.Header.Add("Authorization", "Basic "+creds)
 
 	res, err := WebClient().Do(req)
 	if err != nil {
@@ -162,7 +165,7 @@ func (s *Service) GetCollection(name string) *Collection {
 }
 
 func (c *Collection) GetAllDocuments() []string {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + TRANSMITT_URL + "?type=documents"
 
@@ -180,6 +183,7 @@ func (c *Collection) GetAllDocuments() []string {
 	req.Header.Add("Auth", c.Authkey)
 	req.Header.Add("Servicename", c.Servicename)
 	req.Header.Add("Collectionname", c.Name)
+	req.Header.Add("Authorization", "Basic "+creds)
 
 	res, err := WebClient().Do(req)
 	if err != nil {
@@ -206,7 +210,7 @@ func (c *Collection) GetAllDocuments() []string {
 }
 
 func (c *Collection) GetDocument(name string) *Document {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + RETRIEVE_URL + "?type=document"
 
@@ -225,6 +229,7 @@ func (c *Collection) GetDocument(name string) *Document {
 	req.Header.Add("Auth", c.Authkey)
 	req.Header.Add("Collectionname", c.Name)
 	req.Header.Add("Documentname", name)
+	req.Header.Add("Authorization", "Basic "+creds)
 
 	res, err := WebClient().Do(req)
 	if err != nil {

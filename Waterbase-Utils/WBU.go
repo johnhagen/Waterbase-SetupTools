@@ -1,6 +1,7 @@
 package WBU
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -12,6 +13,7 @@ var M sync.Mutex
 var services map[string]*Service
 
 var serverIP string
+var creds string
 
 // const serverIP = "http://localhost:8080" //"http://192.168.50.121:9420"
 const REGISTER_URL = "/waterbase/register"
@@ -19,9 +21,10 @@ const RETRIEVE_URL = "/waterbase/retrieve"
 const REMOVE_URL = "/waterbase/remove"
 const TRANSMITT_URL = "/waterbase/transmitt"
 
-func Init(ServerIP string) {
+func Init(ServerIP string, Username string, Password string) {
 	serverIP = ServerIP
 	services = make(map[string]*Service)
+	creds = base64.StdEncoding.EncodeToString([]byte(Username + ":" + Password))
 }
 
 func DBCheck() *map[string]*Service {

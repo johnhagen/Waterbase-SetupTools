@@ -8,7 +8,7 @@ import (
 )
 
 func DeleteService(name string, auth string) bool {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	//http://localhost:8080/waterbase/remove?type=service
 
@@ -32,6 +32,8 @@ func DeleteService(name string, auth string) bool {
 		return false
 	}
 
+	req.Header.Add("Authorization", "Basic "+creds)
+
 	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -51,7 +53,7 @@ func DeleteService(name string, auth string) bool {
 }
 
 func (s *Service) DeleteCollection(name string) bool {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	data := make(map[string]interface{})
 
@@ -67,6 +69,8 @@ func (s *Service) DeleteCollection(name string) bool {
 		fmt.Println(err.Error())
 		return false
 	}
+
+	req.Header.Add("Authorization", "Basic "+creds)
 
 	res, err := WebClient().Do(req)
 	if err != nil {
@@ -85,7 +89,7 @@ func (s *Service) DeleteCollection(name string) bool {
 }
 
 func (c *Collection) DeleteDocument(name string) bool {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	url := serverIP + REMOVE_URL + "?type=document"
 
@@ -107,6 +111,8 @@ func (c *Collection) DeleteDocument(name string) bool {
 		fmt.Println(err.Error())
 		return false
 	}
+
+	req.Header.Add("Authorization", "Basic "+creds)
 
 	res, err := WebClient().Do(req)
 	if err != nil {

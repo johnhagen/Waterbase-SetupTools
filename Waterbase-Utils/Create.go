@@ -10,25 +10,27 @@ import (
 
 // Creates a new service and returns the auth key
 func CreateService(name string, owner string, adminkey string) *Service {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
-	req := make(map[string]interface{})
+	reqData := make(map[string]interface{})
 	service := Service{}
 
-	req["name"] = name
-	req["owner"] = owner
-	req["adminkey"] = adminkey
+	reqData["name"] = name
+	reqData["owner"] = owner
+	reqData["adminkey"] = adminkey
 
 	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(req)
+	json.NewEncoder(b).Encode(reqData)
 
-	reqData, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=service", b)
+	req, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=service", b)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
 	}
 
-	res, err := WebClient().Do(reqData)
+	req.Header.Add("Authorization", "Basic "+creds)
+
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -60,14 +62,14 @@ func CreateService(name string, owner string, adminkey string) *Service {
 }
 
 func (s *Service) CreateCollection(name string) *Collection {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
 	if s.Name == "" {
 		fmt.Println("Service doesnt exist")
 		return nil
 	}
 
-	req := make(map[string]interface{})
+	reqData := make(map[string]interface{})
 
 	collection := new(Collection)
 
@@ -77,15 +79,23 @@ func (s *Service) CreateCollection(name string) *Collection {
 	collection.Authkey = s.Authkey
 	collection.Documents = make(map[string]*Document)
 
-	req["name"] = name
-	req["owner"] = s.Owner
-	req["auth"] = s.Authkey
-	req["servicename"] = s.Name
+	reqData["name"] = name
+	reqData["owner"] = s.Owner
+	reqData["auth"] = s.Authkey
+	reqData["servicename"] = s.Name
 
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(collection)
 
-	res, err := WebClient().Post(serverIP+REGISTER_URL+"?type=collection", "application/json", b)
+	req, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=collection", b)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	req.Header.Add("Authorization", "Basic "+creds)
+
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println("Create collection: " + err.Error())
 		return nil
@@ -105,27 +115,29 @@ func (s *Service) CreateCollection(name string) *Collection {
 }
 
 func (c *Collection) CreateDocument(name string, content map[string]interface{}) *Document {
-	defer http.DefaultClient.CloseIdleConnections()
+	//defer http.DefaultClient.CloseIdleConnections()
 
-	req := make(map[string]interface{})
+	reqData := make(map[string]interface{})
 
-	req["name"] = name
-	req["owner"] = c.Owner
-	req["auth"] = c.Authkey
-	req["collectionname"] = c.Name
-	req["servicename"] = c.Servicename
-	req["content"] = content
+	reqData["name"] = name
+	reqData["owner"] = c.Owner
+	reqData["auth"] = c.Authkey
+	reqData["collectionname"] = c.Name
+	reqData["servicename"] = c.Servicename
+	reqData["content"] = content
 
 	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(req)
+	json.NewEncoder(b).Encode(reqData)
 
-	reqData, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=document", b)
+	req, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=document", b)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
 	}
 
-	res, err := WebClient().Do(reqData)
+	req.Header.Add("Authorization", "Basic "+creds)
+
+	res, err := WebClient().Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
