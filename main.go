@@ -8,40 +8,64 @@ import (
 
 func main() {
 
-	//WBU.Init("http://192.168.50.121:8080")
+	//WBU.Init("http://192.168.50.121:8081")
 	WBU.Init("http://localhost:8080")
 
-	//var bf5 *WBU.Service
-	servicename := "Test"
-	key := "BB53476B03CC0FF0043E657FC268C91"
+	serName := "TestSer1"
+	authKey := "5CF04D232C957476CB074506E6B5711"
 
-	bf5 := WBU.GetService(servicename, key)
-	if bf5 == nil {
-		bf5 = WBU.CreateService("Test", "John", "Keks")
+	service := WBU.CreateService(serName, "John", "Keks")
+
+	if service == nil {
+		service = WBU.GetService(serName, authKey)
 	}
 
-	if bf5 == nil {
-		fmt.Println("Fill in service key")
+	if service == nil {
+		fmt.Println("Need correct auth key")
 		return
 	}
 
-	Cheaters := bf5.CreateCollection("Cheaters")
+	fmt.Println(service.Authkey)
 
-	data := make(map[string]interface{})
-	data["info"] = "test"
-
-	for i := 0; i < 10000; i++ {
-		fmt.Println(i)
-		Cheaters.CreateDocument(fmt.Sprintf("%v", rand.Intn(100000)), data)
+	col := service.CreateCollection("Cheaters")
+	if col == nil {
+		col = service.GetCollection("Cheaters")
 	}
 
-	for _, h := range Cheaters.GetAllDocuments() {
-		Cheaters.DeleteDocument(h)
+	fmt.Println(col)
+
+	new := make(map[string]interface{})
+
+	new["test"] = "lalalal"
+
+	if col.GetDocument("thisisatest") != nil {
+		col.DeleteDocument("thisisatest")
+		col.CreateDocument("thisisatest", new)
 	}
 
-	bf5.DeleteCollection("Cheaters")
+	service.GetCollection("Cheaters").GetDocument("thisisatest")
 
-	WBU.DeleteService(bf5.Name, bf5.Authkey)
+	for i := 0; i < 100; i++ {
+		service.CreateCollection(fmt.Sprintf("%d", rand.Intn(10000)))
+	}
 
-	fmt.Println(*WBU.DBCheck())
+	for i := 0; i < 10; i++ {
+		newService := WBU.CreateService(fmt.Sprintf("%d", rand.Intn(1000)), "John", "Keks")
+		if newService != nil {
+			for j := 0; j < 100; j++ {
+				newCollection := newService.CreateCollection(fmt.Sprintf("%d", rand.Intn(100000)))
+				if newCollection != nil {
+					testing := make(map[string]interface{})
+					for k := 0; k < 100; k++ {
+						testing["Data1"] = fmt.Sprintf("%d", rand.Intn(1002020))
+						testing["Data2"] = fmt.Sprintf("%d", rand.Intn(1002020))
+						testing["Data3"] = fmt.Sprintf("%d", rand.Intn(1002020))
+						testing["Data4"] = fmt.Sprintf("%d", rand.Intn(1002020))
+						testing["Data5"] = fmt.Sprintf("%d", rand.Intn(1002020))
+						newCollection.CreateDocument(fmt.Sprintf("%d", rand.Intn(10000)), testing)
+					}
+				}
+			}
+		}
+	}
 }
