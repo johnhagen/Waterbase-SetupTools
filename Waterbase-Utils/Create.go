@@ -15,7 +15,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 	reqData := make(map[string]interface{})
 	service := Service{}
 
-	reqData["name"] = name
+	reqData["servicename"] = name
 	reqData["owner"] = owner
 	reqData["adminkey"] = adminkey
 
@@ -30,7 +30,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -79,13 +79,13 @@ func (s *Service) CreateCollection(name string) *Collection {
 	collection.Authkey = s.Authkey
 	collection.Documents = make(map[string]*Document)
 
-	reqData["name"] = name
+	reqData["collectionname"] = name
 	reqData["owner"] = s.Owner
 	reqData["auth"] = s.Authkey
 	reqData["servicename"] = s.Name
 
 	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(collection)
+	json.NewEncoder(b).Encode(reqData)
 
 	req, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=collection", b)
 	if err != nil {
@@ -95,7 +95,7 @@ func (s *Service) CreateCollection(name string) *Collection {
 
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println("Create collection: " + err.Error())
 		return nil
@@ -119,7 +119,7 @@ func (c *Collection) CreateDocument(name string, content map[string]interface{})
 
 	reqData := make(map[string]interface{})
 
-	reqData["name"] = name
+	reqData["documentname"] = name
 	reqData["owner"] = c.Owner
 	reqData["auth"] = c.Authkey
 	reqData["collectionname"] = c.Name
@@ -137,7 +137,7 @@ func (c *Collection) CreateDocument(name string, content map[string]interface{})
 
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil

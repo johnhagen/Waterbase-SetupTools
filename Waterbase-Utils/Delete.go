@@ -8,9 +8,6 @@ import (
 )
 
 func DeleteService(name string, auth string) bool {
-	//defer http.DefaultClient.CloseIdleConnections()
-
-	//http://localhost:8080/waterbase/remove?type=service
 
 	url := serverIP + REMOVE_URL + "?type=service"
 
@@ -34,7 +31,7 @@ func DeleteService(name string, auth string) bool {
 
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -72,7 +69,7 @@ func (s *Service) DeleteCollection(name string) bool {
 
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -114,7 +111,7 @@ func (c *Collection) DeleteDocument(name string) bool {
 
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false

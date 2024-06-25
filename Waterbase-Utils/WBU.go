@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"sync"
 )
 
@@ -11,6 +12,7 @@ import (
 
 var M sync.Mutex
 var services map[string]*Service
+var Rclient *http.Client
 
 var serverIP string
 var creds string
@@ -21,7 +23,8 @@ const RETRIEVE_URL = "/waterbase/retrieve"
 const REMOVE_URL = "/waterbase/remove"
 const TRANSMITT_URL = "/waterbase/transmitt"
 
-func Init(ServerIP string, Username string, Password string) {
+func Init(ServerIP string, Username string, Password string, router *http.Client) {
+	Rclient = router
 	serverIP = ServerIP
 	services = make(map[string]*Service)
 	creds = base64.StdEncoding.EncodeToString([]byte(Username + ":" + Password))

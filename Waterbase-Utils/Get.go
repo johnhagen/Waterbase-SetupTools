@@ -32,7 +32,7 @@ func GetService(name string, auth string) *Service {
 	req.Header.Add("Auth", auth)
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -80,7 +80,7 @@ func (s *Service) GetAllCollections() []string {
 	req.Header.Add("Auth", s.Authkey)
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -131,7 +131,7 @@ func (s *Service) GetCollection(name string) *Collection {
 	req.Header.Add("Collectionname", name)
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println("Fuck me")
 		fmt.Println(err.Error())
@@ -185,7 +185,7 @@ func (c *Collection) GetAllDocuments() []string {
 	req.Header.Add("Collectionname", c.Name)
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -231,7 +231,7 @@ func (c *Collection) GetDocument(name string) *Document {
 	req.Header.Add("Documentname", name)
 	req.Header.Add("Authorization", "Basic "+creds)
 
-	res, err := WebClient().Do(req)
+	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
