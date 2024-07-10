@@ -114,7 +114,7 @@ func (s *Service) CreateCollection(name string) *Collection {
 	return s.Collections[name]
 }
 
-func (c *Collection) CreateDocument(name string, content map[string]interface{}) *Document {
+func (c *Collection) CreateDocument(name string, content interface{}) *Document {
 	//defer http.DefaultClient.CloseIdleConnections()
 
 	reqData := make(map[string]interface{})
