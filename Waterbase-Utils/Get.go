@@ -55,9 +55,11 @@ func GetService(name string, auth string) *Service {
 
 	service.Name = name
 	service.Authkey = auth
+	M.Lock()
 	services[service.Name] = &service
+	M.Unlock()
 
-	return services[service.Name]
+	return &service
 }
 
 func (s *Service) GetAllCollections() []string {
@@ -159,9 +161,10 @@ func (s *Service) GetCollection(name string) *Collection {
 	}
 
 	collection.Authkey = s.Authkey
+	s.Mutex.Lock()
 	s.Collections[name] = collection
-
-	return s.Collections[name]
+	s.Mutex.Unlock()
+	return collection
 }
 
 func (c *Collection) GetAllDocuments() []string {
@@ -257,6 +260,8 @@ func (c *Collection) GetDocument(name string) *Document {
 		return nil
 	}
 
+	c.Mutex.Lock()
 	c.Documents[name] = document
-	return c.Documents[name]
+	c.Mutex.Unlock()
+	return document
 }

@@ -1,10 +1,18 @@
 package WBU
 
+import "sync"
+
+type DB struct {
+	Services map[string]*Service
+	Mutex    sync.Mutex
+}
+
 type Service struct {
 	Authkey     string
 	Name        string `json:"name"`
 	Owner       string `json:"owner"`
 	Collections map[string]*Collection
+	Mutex       sync.Mutex
 }
 
 type Collection struct {
@@ -14,6 +22,7 @@ type Collection struct {
 	Authkey     string `json:"auth"`
 	LastUpdated string
 	Documents   map[string]*Document
+	Mutex       sync.Mutex
 }
 
 type Document struct {

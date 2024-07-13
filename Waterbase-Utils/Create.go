@@ -58,7 +58,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 	services[service.Name] = &service
 	M.Unlock()
 
-	return services[service.Name]
+	return &service
 }
 
 func (s *Service) CreateCollection(name string) *Collection {
@@ -110,8 +110,10 @@ func (s *Service) CreateCollection(name string) *Collection {
 		return nil
 	}
 
+	s.Mutex.Lock()
 	s.Collections[name] = collection
-	return s.Collections[name]
+	s.Mutex.Unlock()
+	return collection
 }
 
 func (c *Collection) CreateDocument(name string, content interface{}) *Document {
@@ -158,6 +160,8 @@ func (c *Collection) CreateDocument(name string, content interface{}) *Document 
 	doc.UpdatedBy = "temp"
 
 	fmt.Println("Created document: " + doc.Name)
+	c.Mutex.Lock()
 	c.Documents[name] = doc
-	return c.Documents[name]
+	c.Mutex.Unlock()
+	return doc
 }

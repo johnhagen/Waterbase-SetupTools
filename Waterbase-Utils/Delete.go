@@ -81,7 +81,9 @@ func (s *Service) DeleteCollection(name string) bool {
 		return false
 	}
 
+	s.Mutex.Lock()
 	delete(s.Collections, name)
+	s.Mutex.Unlock()
 	return true
 }
 
@@ -123,8 +125,9 @@ func (c *Collection) DeleteDocument(name string) bool {
 		return false
 	}
 
-	fmt.Println("Deleted document: " + name)
+	c.Mutex.Lock()
 	delete(c.Documents, name)
-
+	c.Mutex.Unlock()
+	fmt.Println("Deleted document: " + name)
 	return true
 }
