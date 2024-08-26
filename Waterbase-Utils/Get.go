@@ -9,7 +9,8 @@ import (
 )
 
 func GetService(name string, auth string) *Service {
-	//defer http.DefaultClient.CloseIdleConnections()
+
+	S.Acquire(C, 1)
 
 	url := serverIP + RETRIEVE_URL + "?type=service"
 
@@ -19,12 +20,14 @@ func GetService(name string, auth string) *Service {
 	err := json.NewEncoder(b).Encode(jsonData)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, b)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -35,6 +38,7 @@ func GetService(name string, auth string) *Service {
 	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 	defer res.Body.Close()
@@ -42,6 +46,7 @@ func GetService(name string, auth string) *Service {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -50,6 +55,7 @@ func GetService(name string, auth string) *Service {
 	err = json.Unmarshal(body, &service)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -59,11 +65,13 @@ func GetService(name string, auth string) *Service {
 	services[service.Name] = &service
 	M.Unlock()
 
+	S.Release(1)
 	return &service
 }
 
 func (s *Service) GetAllCollections() []string {
-	//defer http.DefaultClient.CloseIdleConnections()
+
+	S.Acquire(C, 1)
 
 	url := serverIP + TRANSMITT_URL + "?type=collections"
 
@@ -75,6 +83,7 @@ func (s *Service) GetAllCollections() []string {
 	req, err := http.NewRequest(http.MethodGet, url, b)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -85,6 +94,7 @@ func (s *Service) GetAllCollections() []string {
 	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 	defer res.Body.Close()
@@ -94,12 +104,14 @@ func (s *Service) GetAllCollections() []string {
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
 	err = json.Unmarshal(data, &colNames)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -107,7 +119,8 @@ func (s *Service) GetAllCollections() []string {
 }
 
 func (s *Service) GetCollection(name string) *Collection {
-	//defer http.DefaultClient.CloseIdleConnections()
+
+	S.Acquire(C, 1)
 
 	url := serverIP + RETRIEVE_URL + "?type=collection"
 
@@ -118,6 +131,7 @@ func (s *Service) GetCollection(name string) *Collection {
 	if err != nil {
 		fmt.Println("Fuck me")
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -125,6 +139,7 @@ func (s *Service) GetCollection(name string) *Collection {
 	if err != nil {
 		fmt.Println("Fuck me")
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -137,12 +152,14 @@ func (s *Service) GetCollection(name string) *Collection {
 	if err != nil {
 		fmt.Println("Fuck me")
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		fmt.Println("Could not find the collection")
+		S.Release(1)
 		return nil
 	}
 
@@ -151,12 +168,14 @@ func (s *Service) GetCollection(name string) *Collection {
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
 	err = json.Unmarshal(data, &collection)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -164,11 +183,13 @@ func (s *Service) GetCollection(name string) *Collection {
 	s.Mutex.Lock()
 	s.Collections[name] = collection
 	s.Mutex.Unlock()
+	S.Release(1)
 	return collection
 }
 
 func (c *Collection) GetAllDocuments() []string {
-	//defer http.DefaultClient.CloseIdleConnections()
+
+	S.Acquire(C, 1)
 
 	url := serverIP + TRANSMITT_URL + "?type=documents"
 
@@ -180,6 +201,7 @@ func (c *Collection) GetAllDocuments() []string {
 	req, err := http.NewRequest(http.MethodGet, url, b)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -191,6 +213,7 @@ func (c *Collection) GetAllDocuments() []string {
 	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 	defer res.Body.Close()
@@ -200,20 +223,24 @@ func (c *Collection) GetAllDocuments() []string {
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
 	err = json.Unmarshal(data, &docNames)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
+	S.Release(1)
 	return docNames
 }
 
 func (c *Collection) GetDocument(name string) *Document {
-	//defer http.DefaultClient.CloseIdleConnections()
+
+	S.Acquire(C, 1)
 
 	url := serverIP + RETRIEVE_URL + "?type=document"
 
@@ -225,6 +252,7 @@ func (c *Collection) GetDocument(name string) *Document {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -237,18 +265,21 @@ func (c *Collection) GetDocument(name string) *Document {
 	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		fmt.Println("Failed to get document")
+		S.Release(1)
 		return nil
 	}
 
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -257,11 +288,13 @@ func (c *Collection) GetDocument(name string) *Document {
 	err = json.Unmarshal(data, &document)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
 	c.Mutex.Lock()
 	c.Documents[name] = document
 	c.Mutex.Unlock()
+	S.Release(1)
 	return document
 }

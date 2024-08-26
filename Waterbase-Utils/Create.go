@@ -10,7 +10,8 @@ import (
 
 // Creates a new service and returns the auth key
 func CreateService(name string, owner string, adminkey string) *Service {
-	//defer http.DefaultClient.CloseIdleConnections()
+
+	S.Acquire(C, 1)
 
 	reqData := make(map[string]interface{})
 	service := Service{}
@@ -25,6 +26,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 	req, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=service", b)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -33,6 +35,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 	defer res.Body.Close()
@@ -40,6 +43,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -47,6 +51,7 @@ func CreateService(name string, owner string, adminkey string) *Service {
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
+		S.Release(1)
 		return nil
 	}
 
@@ -57,15 +62,16 @@ func CreateService(name string, owner string, adminkey string) *Service {
 	M.Lock()
 	services[service.Name] = &service
 	M.Unlock()
-
+	S.Release(1)
 	return &service
 }
 
 func (s *Service) CreateCollection(name string) *Collection {
-	//defer http.DefaultClient.CloseIdleConnections()
+	S.Acquire(C, 1)
 
 	if s.Name == "" {
 		fmt.Println("Service doesnt exist")
+		S.Release(1)
 		return nil
 	}
 
@@ -90,6 +96,7 @@ func (s *Service) CreateCollection(name string) *Collection {
 	req, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=collection", b)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -98,26 +105,30 @@ func (s *Service) CreateCollection(name string) *Collection {
 	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println("Create collection: " + err.Error())
+		S.Release(1)
 		return nil
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusAlreadyReported {
 		fmt.Println("Collection already exists")
+		S.Release(1)
 		return nil
 	} else if res.StatusCode != http.StatusAccepted {
 		fmt.Println("Failed to create collection")
+		S.Release(1)
 		return nil
 	}
 
 	s.Mutex.Lock()
 	s.Collections[name] = collection
 	s.Mutex.Unlock()
+	S.Release(1)
 	return collection
 }
 
 func (c *Collection) CreateDocument(name string, content interface{}) *Document {
-	//defer http.DefaultClient.CloseIdleConnections()
+	S.Acquire(C, 1)
 
 	reqData := make(map[string]interface{})
 
@@ -134,6 +145,7 @@ func (c *Collection) CreateDocument(name string, content interface{}) *Document 
 	req, err := http.NewRequest(http.MethodPost, serverIP+REGISTER_URL+"?type=document", b)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 
@@ -142,12 +154,14 @@ func (c *Collection) CreateDocument(name string, content interface{}) *Document 
 	res, err := Rclient.Do(req)
 	if err != nil {
 		fmt.Println(err.Error())
+		S.Release(1)
 		return nil
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusAccepted {
 		fmt.Println("Failed to create document")
+		S.Release(1)
 		return nil
 	}
 
@@ -163,5 +177,6 @@ func (c *Collection) CreateDocument(name string, content interface{}) *Document 
 	c.Mutex.Lock()
 	c.Documents[name] = doc
 	c.Mutex.Unlock()
+	S.Release(1)
 	return doc
 }

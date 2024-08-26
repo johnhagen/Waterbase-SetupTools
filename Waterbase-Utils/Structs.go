@@ -1,6 +1,9 @@
 package WBU
 
-import "sync"
+import (
+	"net/http"
+	"sync"
+)
 
 type DB struct {
 	Services map[string]*Service
@@ -32,4 +35,12 @@ type Document struct {
 	CreationDate string      `json:"creationDate"`
 	LastUpdated  string      `json:"lastUpdated"`
 	Content      interface{} `json:"content"`
+}
+
+type SetupConfig struct {
+	ServerIP string
+	Username string
+	Password string
+	Router   *http.Client
+	Threads  int64
 }

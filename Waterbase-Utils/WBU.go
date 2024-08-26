@@ -1,15 +1,21 @@
 package WBU
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"sync"
+	"time"
+
+	"golang.org/x/sync/semaphore"
 )
 
 //"http://localhost:8080"
 
+var C context.Context
+var S *semaphore.Weighted
 var M sync.Mutex
 var services map[string]*Service
 var Rclient *http.Client
@@ -23,11 +29,13 @@ const RETRIEVE_URL = "/waterbase/retrieve"
 const REMOVE_URL = "/waterbase/remove"
 const TRANSMITT_URL = "/waterbase/transmitt"
 
-func Init(ServerIP string, Username string, Password string, router *http.Client) {
-	Rclient = router
-	serverIP = ServerIP
+func Init(config SetupConfig) {
+	C = context.Background()
+	S = semaphore.NewWeighted(config.Threads)
+	Rclient = config.Router
+	serverIP = config.ServerIP
 	services = make(map[string]*Service)
-	creds = base64.StdEncoding.EncodeToString([]byte(Username + ":" + Password))
+	creds = base64.StdEncoding.EncodeToString([]byte(config.Username + ":" + config.Password))
 }
 
 func DBCheck() *map[string]*Service {
@@ -47,6 +55,7 @@ func HyperStressTest(rounds int) {
 	content["tempData"] = "HyperTesting for the win"
 
 	for i := 0; i < rounds; i++ {
+		t1 := time.Now()
 		fmt.Println("Round: " + fmt.Sprintf("%v", i))
 		service := CreateService(fmt.Sprintf("%v", rand.Intn(1000000)), "John", "Keks")
 		if service == nil {
@@ -61,5 +70,9 @@ func HyperStressTest(rounds int) {
 		collection.CreateDocument(docName, content)
 
 		collection.GetDocument(docName)
+
+		DeleteService(service.Name, service.Name)
+		fmt.Printf("Amount per second: %d\n", 1000/(time.Since(t1).Milliseconds()))
 	}
+
 }
