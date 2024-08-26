@@ -12,8 +12,6 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-//"http://localhost:8080"
-
 var C context.Context
 var S *semaphore.Weighted
 var M sync.Mutex
@@ -23,13 +21,13 @@ var Rclient *http.Client
 var serverIP string
 var creds string
 
-// const serverIP = "http://localhost:8080" //"http://192.168.50.121:9420"
 const REGISTER_URL = "/waterbase/register"
 const RETRIEVE_URL = "/waterbase/retrieve"
 const REMOVE_URL = "/waterbase/remove"
 const TRANSMITT_URL = "/waterbase/transmitt"
 
 func Init(config SetupConfig) {
+
 	C = context.Background()
 	S = semaphore.NewWeighted(config.Threads)
 	Rclient = config.Router
@@ -71,7 +69,7 @@ func HyperStressTest(rounds int) {
 
 		collection.GetDocument(docName)
 
-		DeleteService(service.Name, service.Name)
+		DeleteService(service.Name, service.Authkey)
 		fmt.Printf("Amount per second: %d\n", 1000/(time.Since(t1).Milliseconds()))
 	}
 
